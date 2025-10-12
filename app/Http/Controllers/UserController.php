@@ -202,11 +202,4 @@ class UserController extends Controller
                 ->with('error', 'Something went wrong. Please try again.');
         }
     }
-
-    public function confirmdonate($id)
-    {
-        $donation = Donation::findOrFail($id);
-        
-        return redirect()->back()->with('success', 'Thank you! We will verify your transaction and confirm your donation.');
-    }
 }

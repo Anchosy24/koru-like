@@ -93,11 +93,11 @@
         }
 
         .dark-input::placeholder {
-            color: rgba(255, 255, 255, 0.6); /* Light gray for visibility */
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .footer {
-        background: #0a0c12; /* very dark background */
+        background: #0a0c12;
         }
 
         .footer-link {
@@ -107,7 +107,7 @@
         }
 
         .footer-link:hover {
-        color: #00ff80; /* neon green hover */
+        color: #00ff80;
         }
     </style>
 </head>
@@ -166,7 +166,7 @@
 
             </div>
         </div>
-        </nav>
+    </nav>
 
     @yield('content')
 
@@ -213,54 +213,31 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- Enhanced Confirmation Modal Script -->
-@if (session('confirmDonationId'))
+    <!-- SweetAlert Notification -->
+    @if (session('success'))
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var donationId = "{{ session('confirmDonationId') }}";
-            var confirmForm = document.getElementById('confirmForm');
-
-            // Set form action dynamically
-            confirmForm.action = "/donation/confirm/" + donationId;
-
-            // Show modal
-            var confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-            confirmModal.show();
-
-            // Add loading state for better UX
-            confirmForm.addEventListener('submit', function(e) {
-                var submitBtn = confirmForm.querySelector('button[type="submit"]');
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Confirming...';
-                submitBtn.disabled = true;
-            });
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            theme: 'dark',
+            text: '{{ session('success') }}',
+            timer: 2000,
+            showConfirmButton: false,
         });
     </script>
-@endif
+    @elseif (session('error'))
+    <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: '{{ session('error') }}',
+            theme: 'dark',
+            timer: 2000,
+            showConfirmButton: false,
+        });
+    </script>
+    @endif
 
-<!-- SweetAlert Notification -->
-@if (session('success'))
-<script>
-    Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        theme: 'dark',
-        text: '{{ session('success') }}',
-        timer: 2000,
-        showConfirmButton: false,
-    });
-</script>
-@elseif (session('error'))
-<script>
-    Swal.fire({
-        icon: 'error',
-        title: 'Gagal!',
-        text: '{{ session('error') }}',
-        theme: 'dark',
-        timer: 2000,
-        showConfirmButton: false,
-    });
-@endif
-</script>
-@stack('script')
+    @stack('script')
 </body>
 </html>
