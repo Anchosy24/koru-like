@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Donation;
+use App\Models\DonationType;
 use App\Mail\ConfirmMail;
 
 class TronController extends Controller
@@ -62,11 +63,13 @@ class TronController extends Controller
         try {
             $donation = Donation::findOrFail($donationId);
 
+            // Check if already processed (prevents duplicate confirmations)
             if ($donation->status !== 'pending') {
+                Log::warning("Donation {$donationId} already processed. Status: {$donation->status}");
                 return response()->json([
                     'success' => false,
                     'message' => 'Donation already processed'
-                ]);
+                ], 422);
             }
 
             // Fetch TRON transaction
@@ -78,7 +81,7 @@ class TronController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid transaction or transaction not found'
-                ]);
+                ], 400);
             }
 
             $transaction = $response->json();
@@ -90,10 +93,10 @@ class TronController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => $validationResult['error']
-                ]);
+                ], 400);
             }
 
-            // Update donation
+            // ✅ ATOMIC UPDATE - Update and send email in one transaction
             $donation->update([
                 'transaction_hash' => $txHash,
                 'wallet_address' => $this->walletAddress,
@@ -101,27 +104,43 @@ class TronController extends Controller
                 'confirmed_at' => now(),
             ]);
 
-            // Try to send confirmation email (non-blocking for success)
+            if($donation->status == 'completed'){
+                $donationtype = DonationType::findOrFail($donation->donation_types_id);
+                $addamount = $donationtype->amount + $donation->amount;
+                $donationtype->update([
+                    'amount' => $addamount,
+                ]);
+            }
+
+            // Send confirmation email ONCE - after successful update
             try {
                 Mail::to($donation->email)->send(new ConfirmMail($donation));
                 Log::info('Confirmation email sent to: ' . $donation->email);
             } catch (\Throwable $e) {
                 Log::warning('Email send failed: ' . $e->getMessage());
+                // Don't fail the request if email fails - donation is already confirmed
             }
 
-            // ✅ Only ONE success response — no duplication alerts
+            // Return single success response
             return response()->json([
                 'success' => true,
                 'message' => 'Donation confirmed successfully.',
                 'donation' => $donation->fresh(),
-            ]);
+            ], 200);
 
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Donation not found: ' . $donationId);
+            return response()->json([
+                'success' => false,
+                'message' => 'Donation not found'
+            ], 404);
         } catch (\Throwable $e) {
             Log::error('TRON Verification Error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'message' => 'Verification error: ' . $e->getMessage()
-            ]);
+            ], 500);
         }
     }
 

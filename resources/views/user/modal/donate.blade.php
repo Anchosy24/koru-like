@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const walletAddress = "TVU4bo6USqcNc7Ln9gLQCCQYvfRX7osnTq";
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
     let isVerifying = false;
-    let alertShown = false; // Prevent multiple alerts
+    let verificationInProgress = false; // Global flag to prevent concurrent requests
 
     function generateQRCode(data) {
         return "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(data);
@@ -137,6 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 500);
     @endif
 
+    // Copy wallet address
     const copyBtn = document.getElementById('btnCopyAddress');
     if (copyBtn) {
         copyBtn.addEventListener('click', function() {
@@ -160,11 +161,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Verify transaction - PREVENT MULTIPLE SUBMISSIONS
     const verifyBtn = document.getElementById('btnVerify');
     if (verifyBtn) {
-        verifyBtn.addEventListener('click', async function() {
-            // Prevent multiple clicks and alerts
-            if (isVerifying || alertShown) {
+        verifyBtn.addEventListener('click', async function(e) {
+            // Prevent multiple simultaneous requests
+            if (verificationInProgress) {
+                console.warn('Verification already in progress');
                 return;
             }
 
@@ -191,14 +194,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Set verifying state
+            // Lock verification state
+            verificationInProgress = true;
             isVerifying = true;
-            alertShown = true;
             const originalText = verifyBtn.innerHTML;
             verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Verifying...';
             verifyBtn.disabled = true;
 
             try {
+                // Make single API call
                 const response = await fetch(`/donation/verify/${donationId}/${txHash}`, {
                     method: 'POST',
                     headers: {
@@ -210,15 +214,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const data = await response.json();
 
-                if (data.success) {
-                    // Close modal
-                    const modalElement = document.getElementById('confirmModal');
-                    const modal = bootstrap.Modal.getInstance(modalElement);
-                    if (modal) {
-                        modal.hide();
-                    }
+                // Close modal immediately
+                const modalElement = document.getElementById('confirmModal');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                }
 
-                    // Show single success alert
+                // Show exactly ONE alert based on response
+                if (data.success) {
                     await Swal.fire({
                         icon: 'success',
                         title: 'Donation Confirmed!',
@@ -226,12 +230,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         theme: 'dark',
                         confirmButtonText: 'OK',
                         allowOutsideClick: false,
+                        didOpen: () => {
+                            // Prevent any duplicate alerts while this one is open
+                            document.body.style.pointerEvents = 'none';
+                        }
+                    }).then(() => {
+                        window.location.href = '/home';
                     });
-
-                    // Redirect after alert closes
-                    window.location.href = '/home';
                 } else {
-                    // Show single error alert
                     await Swal.fire({
                         icon: 'error',
                         title: 'Verification Failed',
@@ -239,14 +245,22 @@ document.addEventListener('DOMContentLoaded', function () {
                         theme: 'dark',
                     });
 
-                    // Reset button
+                    // Reset button only on error
                     verifyBtn.innerHTML = originalText;
                     verifyBtn.disabled = false;
+                    verificationInProgress = false;
                     isVerifying = false;
-                    alertShown = false;
                 }
             } catch (error) {
                 console.error('Error:', error);
+                
+                // Close modal
+                const modalElement = document.getElementById('confirmModal');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                }
+
                 await Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -257,9 +271,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Reset button
                 verifyBtn.innerHTML = originalText;
                 verifyBtn.disabled = false;
+                verificationInProgress = false;
                 isVerifying = false;
-                alertShown = false;
             }
+        });
+
+        // Prevent double-click on verify button
+        verifyBtn.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            return false;
         });
     }
 });
