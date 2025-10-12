@@ -9,7 +9,7 @@ class Donation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'message', 'amount', 'email', 'donation_types_id', 'status'];
+    protected $fillable = ['name', 'message', 'amount', 'email', 'donation_types_id', 'status', 'confirmed_at', 'payment_address', 'transaction_hash'];
 
     /**
      * Get the donation type that owns the donation.

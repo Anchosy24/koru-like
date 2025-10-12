@@ -5,12 +5,9 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="background-color: #0f172a; color: #fff; border: none; border-radius: 10px;">
       <div class="modal-body text-center py-5">
-
-        <!-- Title -->
         <h4 class="fw-bold mb-2">Donate USDT on TRON</h4>
         <p class="text-secondary mb-4" style="font-size: 0.95rem;">{{ $row->project }}</p>
 
-        <!-- Form -->
         <form method="POST" action="{{ route('donation.store', $row->id) }}">
           @csrf
           <div class="mb-3 text-start">
@@ -33,7 +30,6 @@
             <textarea id="message{{ $row->id }}" name="message" class="form-control dark-input" rows="3" placeholder="Leave a message for the project team..."></textarea>
           </div>
 
-          <!-- Buttons -->
           <div class="d-flex justify-content-between mt-4">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal" style="width: 48%;">Back</button>
             <button type="submit" class="btn" style="width: 48%; background: linear-gradient(to right, #97fb24ff, #16f93cff); color: #fff; border: none;">Submit Donation</button>
@@ -45,7 +41,7 @@
 </div>
 
 <!-- Confirm Payment Modal - TRON USDT -->
-<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmLabel" aria-hidden="true">
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="background-color: #0f172a; color: #fff; border: none; border-radius: 10px;">
       <div class="modal-header border-0">
@@ -58,13 +54,11 @@
       <div class="modal-body text-center py-4">
         <p class="text-secondary mb-4" style="font-size: 0.95rem;">Your contribution helps us make a difference ❤️</p>
 
-        <!-- Donation Amount -->
         <div class="alert mb-3" style="background-color: #1e293b; border: 1px solid #51c4d1; border-radius: 8px;">
           <p class="mb-2 text-secondary small">Donation Amount</p>
           <h3 class="fw-bold mb-0" style="color: #51c4d1;" id="displayAmount">0.00 USDT</h3>
         </div>
 
-        <!-- Wallet Address Section -->
         <h5 class="fw-bold mb-3 mt-4">Send USDT to this TRON Wallet:</h5>
         <div class="alert mb-3" style="background-color: #1e293b; border: 1px solid #51c4d1; border-radius: 8px;">
           <p class="mb-2 text-secondary small">Wallet Address</p>
@@ -74,14 +68,12 @@
           <small class="text-secondary d-block">⚠️ Only send USDT (TRC-20) to this address</small>
         </div>
 
-        <!-- QR Code -->
         <h5 class="fw-bold mb-3">Scan QR Code:</h5>
         <div class="mb-4">
           <img id="qrCodeImg" src="" alt="TRON Wallet QR Code" class="img-fluid" 
                style="max-width: 250px; border: 3px solid #51c4d1; border-radius: 10px; padding: 10px; background: #fff;">
         </div>
 
-        <!-- Instructions -->
         <div class="alert mb-4" style="background-color: #1e293b; border: 1px solid #fbbf24; border-radius: 8px; color: #fbbf24; text-align: left;">
           <small class="d-block mb-2">
             <i class="fas fa-info-circle me-2"></i><strong>Steps:</strong>
@@ -93,19 +85,14 @@
           <small class="d-block">5. Paste hash below and verify</small>
         </div>
 
-        <!-- Transaction Hash Input -->
         <div class="mb-3">
           <label for="txHash" class="form-label text-white-50 text-start d-block">Transaction Hash (After sending)</label>
           <input type="text" class="form-control dark-input" id="txHash" placeholder="Paste your transaction hash here" 
                  style="font-size: 0.85rem;">
-          <small class="text-secondary d-block mt-2">Find your hash on <a href="https://tronscan.org" target="_blank" 
-                                                                         style="color: #51c4d1; text-decoration: none;">Tronscan.org</a></small>
+          <small class="text-secondary d-block mt-2">Find your hash on <a href="https://nileex.io" target="_blank" 
+                                                                         style="color: #51c4d1; text-decoration: none;">Nile Tronscan</a></small>
         </div>
 
-        <!-- Verification Status -->
-        <div id="verificationStatus" class="mb-3"></div>
-
-        <!-- Buttons -->
         <div class="d-flex justify-content-between mt-4 gap-2">
           <button type="button" id="btnBack" class="btn btn-outline-light" style="flex: 1;" data-bs-dismiss="modal">Back</button>
           <button type="button" id="btnVerify" class="btn" style="flex: 1; background: linear-gradient(to right, #97fb24ff, #16f93cff); color: #fff; border: none;">
@@ -113,7 +100,6 @@
           </button>
         </div>
 
-        <!-- Copy Address Button -->
         <button type="button" id="btnCopyAddress" class="btn btn-sm btn-secondary mt-3 w-100">
           <i class="fas fa-copy me-2"></i>Copy Wallet Address
         </button>
@@ -127,19 +113,17 @@
 document.addEventListener('DOMContentLoaded', function () {
     const walletAddress = "TVU4bo6USqcNc7Ln9gLQCCQYvfRX7osnTq";
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+    let isVerifying = false; // Prevent multiple submissions
 
-    // Generate QR Code
     function generateQRCode(data) {
         return "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(data);
     }
 
-    // Initialize QR code for wallet
     const qrCodeImg = document.getElementById('qrCodeImg');
     if (qrCodeImg) {
         qrCodeImg.src = generateQRCode(walletAddress);
     }
 
-    // Handle confirm modal from session
     @if(session('confirmDonationId'))
         const donationId = "{{ session('confirmDonationId') }}";
         const donationAmount = "{{ session('donationAmount') }}";
@@ -154,7 +138,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 500);
     @endif
 
-    // Copy address to clipboard
     const copyBtn = document.getElementById('btnCopyAddress');
     if (copyBtn) {
         copyBtn.addEventListener('click', function() {
@@ -178,10 +161,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Verify Transaction
     const verifyBtn = document.getElementById('btnVerify');
     if (verifyBtn) {
         verifyBtn.addEventListener('click', function() {
+            // Prevent multiple clicks
+            if (isVerifying) {
+                return;
+            }
+
             const txHash = document.getElementById('txHash').value.trim();
             const donationId = "{{ session('confirmDonationId') }}";
 
@@ -205,6 +192,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            // Set verifying state
+            isVerifying = true;
             const originalText = verifyBtn.innerHTML;
             verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Verifying...';
             verifyBtn.disabled = true;
@@ -217,24 +206,28 @@ document.addEventListener('DOMContentLoaded', function () {
                     'Accept': 'application/json',
                 }
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
+                isVerifying = false; // Reset state
+                
                 if (data.success) {
+                    // Close modal first
+                    const modalElement = document.getElementById('confirmModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+
+                    // Show success message
                     Swal.fire({
                         icon: 'success',
                         title: 'Donation Confirmed!',
-                        text: 'Your donation has been verified and confirmed. Thank you for your support!',
+                        html: 'Your donation has been verified successfully.<br><strong>A confirmation email has been sent to your email address.</strong>',
                         theme: 'dark',
+                        confirmButtonText: 'OK',
                         allowOutsideClick: false,
-                        didClose: () => {
-                            bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
-                            location.reload();
-                        }
+                    }).then(() => {
+                        window.location.href = '/home';
                     });
                 } else {
                     Swal.fire({
@@ -248,11 +241,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(error => {
+                isVerifying = false; // Reset state
                 console.error('Error:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'An error occurred: ' + error.message,
+                    text: 'An error occurred while verifying the transaction.',
                     theme: 'dark',
                 });
                 verifyBtn.innerHTML = originalText;
