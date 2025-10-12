@@ -118,8 +118,8 @@
 
             <!-- Left Logo -->
             <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
-            <img src="{{ asset('image/korulogo2.png') }}" alt="Koru DAO" width="100" class="me-2"> 
-            Koru-Like
+            <img src="{{ asset('image/koru-nobg.png') }}" alt="Koru DAO" width="50" class="me-2"> 
+            Koru
             </a>
 
             <!-- Toggler (mobile) -->
@@ -175,8 +175,8 @@
     <div class="container">
         <div class="row">
         <div class="col-md-4 mb-4">
-            <img src="{{ asset('image/korulogo2.png') }}" alt="Koru DAO Logo" class="rounded-circle me-2 bg-white mb-4" width= 100;>
-            <h5 class="fw-bold">KORU-LIKE</h5>
+            <img src="{{ asset('image/koru-nobg.png') }}" alt="Koru DAO Logo" class="rounded-circle mb-4" width= 100;>
+            <h5 class="fw-bold">KORU</h5>
             <p class="text-light">Discover trending conversations and contribute to meaningful projects that shape the future.</p>
         </div>
 
@@ -260,6 +260,7 @@
         showConfirmButton: false,
     });
 @endif
+</script>
 @stack('script')
 </body>
 </html>
