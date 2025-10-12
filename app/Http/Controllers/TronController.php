@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use App\Models\Donation;
+use App\Mail\ConfirmMail;
 
 class TronController extends Controller
 {
@@ -15,7 +17,7 @@ class TronController extends Controller
 
     public function __construct()
     {
-        $this->tronGridUrl = env('TRON_GRID_URL', 'https://nile.trongrid.io');
+        $this->tronGridUrl = env('TRON_GRID_URL');
         $this->walletAddress = env('TRON_WALLET_ADDRESS');
         $this->usdtContract = env('USDT_CONTRACT');
     }
@@ -62,38 +64,36 @@ class TronController extends Controller
 
             if ($donation->status !== 'pending') {
                 return response()->json([
-                    'success' => false, 
+                    'success' => false,
                     'message' => 'Donation already processed'
                 ]);
             }
 
-            // Get transaction details from TronGrid
+            // Fetch TRON transaction
             $response = Http::timeout(30)->get("{$this->tronGridUrl}/wallet/gettransactionbyid", [
                 'value' => $txHash
             ]);
 
             if (!$response->successful() || !$response->json()) {
                 return response()->json([
-                    'success' => false, 
+                    'success' => false,
                     'message' => 'Invalid transaction or transaction not found'
                 ]);
             }
 
             $transaction = $response->json();
-            
             Log::info('TRON Transaction Data:', $transaction);
 
             // Validate transaction
             $validationResult = $this->validateTronTransaction($transaction, $donation->amount);
-            
             if (!$validationResult['valid']) {
                 return response()->json([
-                    'success' => false, 
+                    'success' => false,
                     'message' => $validationResult['error']
                 ]);
             }
 
-            // Update donation record
+            // Update donation
             $donation->update([
                 'transaction_hash' => $txHash,
                 'wallet_address' => $this->walletAddress,
@@ -101,16 +101,25 @@ class TronController extends Controller
                 'confirmed_at' => now(),
             ]);
 
+            // Try to send confirmation email (non-blocking for success)
+            try {
+                Mail::to($donation->email)->send(new ConfirmMail($donation));
+                Log::info('Confirmation email sent to: ' . $donation->email);
+            } catch (\Throwable $e) {
+                Log::warning('Email send failed: ' . $e->getMessage());
+            }
+
+            // ✅ Only ONE success response — no duplication alerts
             return response()->json([
                 'success' => true,
-                'message' => 'Donation confirmed successfully',
-                'donation' => $donation
+                'message' => 'Donation confirmed successfully.',
+                'donation' => $donation->fresh(),
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('TRON Verification Error: ' . $e->getMessage());
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Verification error: ' . $e->getMessage()
             ]);
         }
