@@ -1,8 +1,8 @@
 @extends('layouts.landing')
 
 @section('content')
-<img src="{{ asset('image/korulogo2.png') }}" alt="" class="rounded-circle me-2 bg-white mb-4" width= 100; height = 100;>
-<h2 class="fw-bold mb-3">Welcome to Koru-Like</h2>
+<img src="{{ asset('image/koru-nobg.png') }}" alt="" class="rounded-circle me-2 mb-3" width= 100; height = 100;>
+<h2 class="fw-bold mb-3">Welcome to Koru</h2>
 <p class="fw-bold opacity-75 mb-3">Sign in to Continue</p>
 <div class="d-grid">
     <a href="/auth-google-redirect" class="btn btn-dark text-white border border-white"><i class="fab fa-google me-2"></i> Sign in with google</a>

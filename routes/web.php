@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\TronController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,6 +51,8 @@ Route::middleware(['auth', 'check_role:user', 'check_status'])->group(function (
     // Donation Routes
     Route::post('/donation/store/{id}', [UserController::class, 'donate'])->name('donation.store');
     Route::put('/donation/confirm/{id}', [UserController::class, 'confirmdonate'])->name('donation.confirm');
+    Route::post('/donation/verify/{id}/{txHash}', [TronController::class, 'verifyAndConfirmDonation'])->name('donation.verify');
+    Route::get('/donation/check/{txHash}', [TronController::class, 'checkTransaction'])->name('donation.check');
 });
 
 // Admin Routes (Requires authentication and admin role)

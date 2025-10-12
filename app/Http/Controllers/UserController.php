@@ -10,7 +10,6 @@ use App\Models\ShareIdeas;
 use App\Models\FundProject;
 use App\Models\SubmitDesign;
 use App\Models\CodeContribution;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Support\Facades\File;
 use Exception;
 
@@ -108,7 +107,6 @@ class UserController extends Controller
     
                 $destinationPath = public_path('design');
                 
-                // Create directory if it doesn't exist
                 if (!File::exists($destinationPath)) {
                     File::makeDirectory($destinationPath, 0755, true);
                 }
@@ -131,7 +129,7 @@ class UserController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'email' => 'required|email|max:255',
-            'file_path' => 'required|file|max:10240', // 10MB max
+            'file_path' => 'required|file|max:10240',
             'description' => 'required|string',
         ]);
 
@@ -148,7 +146,6 @@ class UserController extends Controller
 
                 $destinationPath = public_path('code');
                 
-                // Create directory if it doesn't exist
                 if (!File::exists($destinationPath)) {
                     File::makeDirectory($destinationPath, 0755, true);
                 }
@@ -175,6 +172,8 @@ class UserController extends Controller
             'message' => 'nullable|string|max:1000',
         ]);
 
+        $walletAddress = 'TVU4bo6USqcNc7Ln9gLQCCQYvfRX7osnTq';
+
         try{
             $donation = Donation::create([
                 'donation_types_id' => $id,
@@ -183,21 +182,16 @@ class UserController extends Controller
                 'amount' => $request->amount,
                 'message' => $request->message,
                 'status' => 'pending',
+                'payment_address' => $walletAddress,
             ]);
 
-            // Get PayPal configuration
-            $paypalEmail = config('paypal.business_email');
-            $paypalMeUsername = config('paypal.paypal_me.username');
-            
-            // Generate PayPal payment URL
-            $paypalPaymentUrl = "https://www.paypal.com/paypalme/{$paypalMeUsername}/{$donation->amount}USD";
-            
-            // Generate QR code URL
-            $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" . urlencode($paypalPaymentUrl);
+            // Generate TRON wallet QR code
+            $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($walletAddress);
 
             return redirect()->back()->with([
                 'confirmDonationId' => $donation->id,
-                'paypalQRUrl' => $qrCodeUrl,
+                'qrCodeUrl' => $qrCodeUrl,
+                'walletAddress' => $walletAddress,
                 'donationAmount' => $donation->amount,
                 'donationName' => $donation->name,
             ]);
@@ -213,6 +207,6 @@ class UserController extends Controller
     {
         $donation = Donation::findOrFail($id);
         
-        return redirect()->back()->with('success', 'Thank you! We will check your donation is done or not.');
+        return redirect()->back()->with('success', 'Thank you! We will verify your transaction and confirm your donation.');
     }
 }

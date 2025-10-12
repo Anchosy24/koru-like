@@ -232,8 +232,8 @@
 @section('content')
     <!-- Hero Section -->
     <section class="hero text-center">
-        <img src="{{ asset('image/korulogo2.png') }}" alt="Koru -Like Logo" class="rounded-circle me-2 bg-white mb-4" width= 150;>
-        <h2 class="fw-bold">KORU-LIKE</h2>
+        <img src="{{ asset('image/koru-nobg.png') }}" alt="Koru -Like Logo" class="rounded-circle me-2" width= 150;>
+        <h2 class="fw-bold">KORU</h2>
         <p class="text-success mb-2">PROSPERITY FOR ALL</p>
         <p class="lead mb-4">Discover trending conversations and contribute to projects that matter</p>
 
