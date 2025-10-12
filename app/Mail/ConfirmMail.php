@@ -32,7 +32,7 @@ class ConfirmMail extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('app.name')),
-            subject: 'Koru-Like - Donation Confirmation',
+            subject: 'Koru - Donation Confirmation',
         );
     }
 
