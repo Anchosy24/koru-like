@@ -1,5 +1,3 @@
-<!-- resources/views/user/modal/donate.blade.php -->
-
 <!-- Donate Modal -->
 <div class="modal fade" id="donate{{ $row->id }}" tabindex="-1" aria-labelledby="donateLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -113,7 +111,8 @@
 document.addEventListener('DOMContentLoaded', function () {
     const walletAddress = "TVU4bo6USqcNc7Ln9gLQCCQYvfRX7osnTq";
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
-    let isVerifying = false; // Prevent multiple submissions
+    let isVerifying = false;
+    let alertShown = false; // Prevent multiple alerts
 
     function generateQRCode(data) {
         return "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(data);
@@ -163,9 +162,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const verifyBtn = document.getElementById('btnVerify');
     if (verifyBtn) {
-        verifyBtn.addEventListener('click', function() {
-            // Prevent multiple clicks
-            if (isVerifying) {
+        verifyBtn.addEventListener('click', async function() {
+            // Prevent multiple clicks and alerts
+            if (isVerifying || alertShown) {
                 return;
             }
 
@@ -194,64 +193,73 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Set verifying state
             isVerifying = true;
+            alertShown = true;
             const originalText = verifyBtn.innerHTML;
             verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Verifying...';
             verifyBtn.disabled = true;
 
-            fetch(`/donation/verify/${donationId}/${txHash}`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                isVerifying = false; // Reset state
-                
+            try {
+                const response = await fetch(`/donation/verify/${donationId}/${txHash}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
                 if (data.success) {
-                    // Close modal first
+                    // Close modal
                     const modalElement = document.getElementById('confirmModal');
                     const modal = bootstrap.Modal.getInstance(modalElement);
                     if (modal) {
                         modal.hide();
                     }
 
-                    // Show success message
-                    Swal.fire({
+                    // Show single success alert
+                    await Swal.fire({
                         icon: 'success',
                         title: 'Donation Confirmed!',
                         html: 'Your donation has been verified successfully.<br><strong>A confirmation email has been sent to your email address.</strong>',
                         theme: 'dark',
                         confirmButtonText: 'OK',
                         allowOutsideClick: false,
-                    }).then(() => {
-                        window.location.href = '/home';
                     });
+
+                    // Redirect after alert closes
+                    window.location.href = '/home';
                 } else {
-                    Swal.fire({
+                    // Show single error alert
+                    await Swal.fire({
                         icon: 'error',
                         title: 'Verification Failed',
                         text: data.message || 'Could not verify transaction. Please check the hash and try again.',
                         theme: 'dark',
                     });
+
+                    // Reset button
                     verifyBtn.innerHTML = originalText;
                     verifyBtn.disabled = false;
+                    isVerifying = false;
+                    alertShown = false;
                 }
-            })
-            .catch(error => {
-                isVerifying = false; // Reset state
+            } catch (error) {
                 console.error('Error:', error);
-                Swal.fire({
+                await Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'An error occurred while verifying the transaction.',
+                    text: 'An error occurred while verifying the transaction. Please try again.',
                     theme: 'dark',
                 });
+
+                // Reset button
                 verifyBtn.innerHTML = originalText;
                 verifyBtn.disabled = false;
-            });
+                isVerifying = false;
+                alertShown = false;
+            }
         });
     }
 });

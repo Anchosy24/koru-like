@@ -11,6 +11,10 @@ class Donation extends Model
 
     protected $fillable = ['name', 'message', 'amount', 'email', 'donation_types_id', 'status', 'confirmed_at', 'payment_address', 'transaction_hash'];
 
+    protected $casts = [
+        'confirmed_at' => 'datetime',
+    ];
+
     /**
      * Get the donation type that owns the donation.
      */

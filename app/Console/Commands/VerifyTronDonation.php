@@ -11,6 +11,16 @@ class VerifyTronDonations extends Command
 {
     protected $signature = 'donations:verify-tron';
     protected $description = 'Verify pending TRON USDT donations and auto-confirm them';
+    private $tronGridUrl;
+    private $walletAddress;
+    private $usdtContract;
+
+    public function __construct()
+    {
+        $this->tronGridUrl = env('TRON_GRID_URL');
+        $this->walletAddress = env('TRON_WALLET_ADDRESS');
+        $this->usdtContract = env('USDT_CONTRACT');
+    }
 
     public function handle()
     {
@@ -30,9 +40,6 @@ class VerifyTronDonations extends Command
 
     private function verifyDonationOnChain($donation)
     {
-        $tronGridUrl = 'https://api.trongrid.io';
-        $walletAddress = 'TVU4bo6USqcNc7Ln9gLQCCQYvfRX7osnTq';
-
         $response = Http::get("{$tronGridUrl}/v1/accounts/{$walletAddress}/transactions/trc20");
 
         if ($response->successful() && isset($response['data'])) {
